@@ -1,0 +1,244 @@
+diff -Naur pine4.64/pine/mailindx.c pine4.64_UBSI/pine/mailindx.c
+--- pine4.64/pine/mailindx.c	2005-05-03 18:00:53.000000000 -0400
++++ pine4.64_UBSI/pine/mailindx.c	2016-05-20 00:26:10.422897196 -0400
+@@ -51,6 +51,7 @@
+  
+ #include "headers.h"
+ #include "../c-client/imap4r1.h"
++#include "UBSI.h"
+ 
+ /*
+  * Some common Command Bindings
+@@ -733,6 +734,7 @@
+     set_need_format_setup();
+ 
+     while (1) {
++						UBSI_LOOP_ENTRY(3);
+ 	if(km_popped){
+ 	    km_popped--;
+ 	    if(km_popped == 0){
+@@ -1185,6 +1187,7 @@
+ 		if(id.entry_state)
+ 		  fs_give((void **)&(id.entry_state));
+ 
++		UBSI_LOOP_EXIT(3);
+ 		return(0);
+ 	    }
+ 
+@@ -1199,6 +1202,7 @@
+ 		if(id.entry_state)
+ 		  fs_give((void **)&(id.entry_state));
+ 
++						UBSI_LOOP_EXIT(3);
+ 		return(0);
+ 	    }
+ 
+@@ -1259,6 +1263,7 @@
+ 				  if(id.entry_state)
+ 				    fs_give((void **)&(id.entry_state));
+ 
++						UBSI_LOOP_EXIT(3);
+ 				  return(0);
+ 			      }
+ 			  }
+@@ -1422,6 +1427,7 @@
+ 		    if(id.entry_state)
+ 		      fs_give((void **)&(id.entry_state));
+ 
++						UBSI_LOOP_EXIT(3);
+ 		    return(0);
+ 		}
+ 		else{
+@@ -1516,6 +1522,7 @@
+ 		    if(id.entry_state)
+ 		      fs_give((void **)&(id.entry_state));
+ 
++						UBSI_LOOP_EXIT(3);
+ 		    return(1);
+ 
+ 		  case MC_SELECT :	/* select */
+@@ -1524,6 +1531,7 @@
+ 		    if(id.entry_state)
+ 		      fs_give((void **)&(id.entry_state));
+ 
++						UBSI_LOOP_EXIT(3);
+ 		    return(0);
+ 
+ 		  case MC_PREVITEM :		/* previous */
+@@ -1541,6 +1549,7 @@
+ 	    }
+ 	}				/* The big switch */
+     }					/* the BIG while loop! */
++				UBSI_LOOP_EXIT(3);
+ }
+ 
+ 
+diff -Naur pine4.64/pine/pine.c pine4.64_UBSI/pine/pine.c
+--- pine4.64/pine/pine.c	2005-09-12 18:04:25.000000000 -0400
++++ pine4.64_UBSI/pine/pine.c	2016-05-20 00:24:50.630897196 -0400
+@@ -39,6 +39,7 @@
+ 
+   ----------------------------------------------------------------------*/
+ 
++#include "UBSI.h"
+ #include "headers.h"
+ #include "../c-client/imap4r1.h"
+ 
+@@ -1336,11 +1337,13 @@
+ 	  pine_state->next_screen = pine_state->start_in_index
+ 				      ? mail_index_screen : main_menu_screen;
+         while(1){
++										UBSI_LOOP_ENTRY(1);
+             if(pine_state->next_screen == SCREEN_FUN_NULL) 
+               pine_state->next_screen = main_menu_screen;
+ 
+             (*(pine_state->next_screen))(pine_state);
+         }
++								UBSI_LOOP_EXIT(1);
+     }
+ }
+ 
+@@ -1493,6 +1496,7 @@
+     dprint(1, (debugfile, "\n\n    ---- MAIN_MENU_SCREEN ----\n"));
+ 
+     while(1){
++						UBSI_LOOP_ENTRY(2);
+ 	if(km_popped){
+ 	    km_popped--;
+ 	    if(km_popped == 0){
+@@ -1804,24 +1808,28 @@
+ 	    /*---------- Quit pine ----------*/
+ 	  case MC_QUIT :
+ 	    pine_state->next_screen = quit_screen;
++						UBSI_LOOP_EXIT(2);
+ 	    return;
+ 
+   
+ 	    /*---------- Go to composer ----------*/
+ 	  case MC_COMPOSE :
+ 	    pine_state->next_screen = compose_screen;
++				UBSI_LOOP_EXIT(2);
+ 	    return;
+ 
+   
+ 	    /*---- Go to alternate composer ------*/
+ 	  case MC_ROLE :
+ 	    pine_state->next_screen = alt_compose_screen;
++				UBSI_LOOP_EXIT(2);
+ 	    return;
+ 
+   
+ 	    /*---------- Top of Folder list ----------*/
+ 	  case MC_COLLECTIONS : 
+ 	    pine_state->next_screen = folder_screen;
++				UBSI_LOOP_EXIT(2);
+ 	    return;
+ 
+ 
+@@ -1839,6 +1847,7 @@
+ 	    if(new_folder)
+ 	      visit_folder(ps_global, new_folder, tc, NULL, 0L);
+ 
++				UBSI_LOOP_EXIT(2);
+ 	    return;
+ 
+ 
+@@ -1849,6 +1858,7 @@
+ 			    pine_state->msgmap);
+ 
+ 	    pine_state->next_screen = mail_index_screen;
++				UBSI_LOOP_EXIT(2);
+ 	    return;
+ 
+ 
+@@ -1865,8 +1875,10 @@
+ 	    setup_command = setup_menu(pine_state);
+ 	    pine_state->mangled_footer = 1;
+ 	    do_setup_task(setup_command);
+-	    if(ps_global->next_screen != main_menu_screen)
++	    if(ps_global->next_screen != main_menu_screen) {
++				UBSI_LOOP_EXIT(2);
+ 	      return;
++					}
+ 
+ 	    break;
+ 
+@@ -1874,6 +1886,7 @@
+ 	    /*---------- Go to address book ----------*/
+ 	  case MC_ADDRBOOK :
+ 	    pine_state->next_screen = addr_book_screen;
++				UBSI_LOOP_EXIT(2);
+ 	    return;
+ 
+ 
+@@ -1923,18 +1936,22 @@
+ 
+ 			      case 2 :
+ 				pine_state->next_screen = compose_screen;
++				UBSI_LOOP_EXIT(2);
+ 				return;
+ 
+ 			      case 4 :
+ 				pine_state->next_screen = mail_index_screen;
++				UBSI_LOOP_EXIT(2);
+ 				return;
+ 
+ 			      case 6 :
+ 				pine_state->next_screen = folder_screen;
++				UBSI_LOOP_EXIT(2);
+ 				return;
+ 
+ 			      case 8 :
+ 				pine_state->next_screen = addr_book_screen;
++				UBSI_LOOP_EXIT(2);
+ 				return;
+ 
+ 			      case 10 :
+@@ -1942,6 +1959,7 @@
+ 
+ 			      case 12 :
+ 				pine_state->next_screen = quit_screen;
++				UBSI_LOOP_EXIT(2);
+ 				return;
+ 
+ 			      default:			/* no op */
+@@ -1978,6 +1996,7 @@
+ 	    break;
+ 	 } /* the switch */
+     } /* the BIG while loop! */
++				UBSI_LOOP_EXIT(2);
+ }
+ 
+ 
+diff -Naur pine4.64/pine/UBSI.h pine4.64_UBSI/pine/UBSI.h
+--- pine4.64/pine/UBSI.h	1969-12-31 19:00:00.000000000 -0500
++++ pine4.64_UBSI/pine/UBSI.h	2016-05-20 00:22:20.970897196 -0400
+@@ -0,0 +1,28 @@
++#ifndef UBSI_DEFINE
++#define UBSI_DEFINE
++
++#define UBSI_MEM_WRITE(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-300, high); \
++  kill(-301, low); \
++}
++
++#define UBSI_MEM_READ(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-200, high); \
++  kill(-201, low); \
++}
++
++#define UBSI_LOOP_ENTRY(loopId) { \
++  kill(-100, loopId); \
++}
++
++#define UBSI_LOOP_EXIT(loopId) { \
++  kill(-101, loopId); \
++}
++
++#endif

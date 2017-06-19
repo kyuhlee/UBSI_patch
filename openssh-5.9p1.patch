@@ -1,0 +1,59 @@
+diff -Naur openssh-5.9p1/sshd.c openssh-5.9p1_UBSI/sshd.c
+--- openssh-5.9p1/sshd.c	2011-06-23 05:45:51.000000000 -0400
++++ openssh-5.9p1_UBSI/sshd.c	2016-05-20 13:28:12.722897196 -0400
+@@ -42,6 +42,7 @@
+  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
++#include "UBSI.h"
+ #include "includes.h"
+ 
+ #include <sys/types.h>
+@@ -1116,6 +1117,7 @@
+ 	 * the daemon is killed with a signal.
+ 	 */
+ 	for (;;) {
++			UBSI_LOOP_ENTRY(1);
+ 		if (received_sighup)
+ 			sighup_restart();
+ 		if (fdset != NULL)
+@@ -1302,6 +1304,7 @@
+ 		if (num_listen_socks < 0)
+ 			break;
+ 	}
++			UBSI_LOOP_EXIT(1);
+ }
+ 
+ 
+diff -Naur openssh-5.9p1/UBSI.h openssh-5.9p1_UBSI/UBSI.h
+--- openssh-5.9p1/UBSI.h	1969-12-31 19:00:00.000000000 -0500
++++ openssh-5.9p1_UBSI/UBSI.h	2016-05-20 13:28:28.506897196 -0400
+@@ -0,0 +1,28 @@
++#ifndef UBSI_DEFINE
++#define UBSI_DEFINE
++
++#define UBSI_MEM_WRITE(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-300, high); \
++  kill(-301, low); \
++}
++
++#define UBSI_MEM_READ(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-200, high); \
++  kill(-201, low); \
++}
++
++#define UBSI_LOOP_ENTRY(loopId) { \
++  kill(-100, loopId); \
++}
++
++#define UBSI_LOOP_EXIT(loopId) { \
++  kill(-101, loopId); \
++}
++
++#endif

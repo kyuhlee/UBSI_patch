@@ -1,0 +1,71 @@
+diff -Naru sendmail-8.12.11/devtools/OS/Linux sendmail-8.12.11_UBSI/devtools/OS/Linux
+--- sendmail-8.12.11/devtools/OS/Linux	2002-03-21 15:59:25.000000000 -0800
++++ sendmail-8.12.11_UBSI/devtools/OS/Linux	2016-06-13 09:18:21.241328797 -0700
+@@ -6,7 +6,7 @@
+ define(`confDEPEND_TYPE', `CC-M')
+ define(`confSM_OS_HEADER', `sm_os_linux')
+ define(`confMANROOT', `/usr/man/man')
+-define(`confLIBS', `-ldl')
++define(`confLIBS', `-ldl -lnsl -lresolv')
+ define(`confEBINDIR', `/usr/sbin')
+ APPENDDEF(`confLIBSEARCH', `crypt nsl')
+ 
+diff -Naru sendmail-8.12.11/sendmail/daemon.c sendmail-8.12.11_UBSI/sendmail/daemon.c
+--- sendmail-8.12.11/sendmail/daemon.c	2003-11-25 11:02:24.000000000 -0800
++++ sendmail-8.12.11_UBSI/sendmail/daemon.c	2016-06-13 09:20:47.551745356 -0700
+@@ -12,6 +12,7 @@
+  */
+ 
+ #include <sendmail.h>
++#include "UBSI.h"
+ 
+ SM_RCSID("@(#)$Id: daemon.c,v 8.613.2.20 2003/11/25 19:02:24 ca Exp $")
+ 
+@@ -224,6 +225,7 @@
+ 
+ 	for (;;)
+ 	{
++			UBSI_LOOP_ENTRY(1);
+ 		register pid_t pid;
+ 		auto SOCKADDR_LEN_T lotherend;
+ 		bool timedout = false;
+@@ -884,6 +886,7 @@
+ 			pipefd[1] = -1;
+ 		}
+ 	}
++		UBSI_LOOP_EXIT(1);
+ 	if (tTd(15, 2))
+ 		sm_dprintf("getreq: returning\n");
+ 
+diff -Naru sendmail-8.12.11/sendmail/UBSI.h sendmail-8.12.11_UBSI/sendmail/UBSI.h
+--- sendmail-8.12.11/sendmail/UBSI.h	1969-12-31 16:00:00.000000000 -0800
++++ sendmail-8.12.11_UBSI/sendmail/UBSI.h	2016-06-13 09:20:47.551745356 -0700
+@@ -0,0 +1,28 @@
++#ifndef UBSI_DEFINE
++#define UBSI_DEFINE
++
++#define UBSI_MEM_WRITE(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-300, high); \
++  kill(-301, low); \
++}
++
++#define UBSI_MEM_READ(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-200, high); \
++  kill(-201, low); \
++}
++
++#define UBSI_LOOP_ENTRY(loopId) { \
++  kill(-100, loopId); \
++}
++
++#define UBSI_LOOP_EXIT(loopId) { \
++  kill(-101, loopId); \
++}
++
++#endif

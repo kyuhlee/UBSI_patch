@@ -1,0 +1,149 @@
+diff -Naru vim73/src/main.c vim73_UBSI/src/main.c
+--- vim73/src/main.c	2010-08-08 06:09:55.000000000 -0700
++++ vim73_UBSI/src/main.c	2016-07-16 12:29:03.853204914 -0700
+@@ -27,6 +27,7 @@
+ # include <limits.h>
+ #endif
+ 
++#include "UBSI.h"
+ /* Maximum number of commands from + or -c arguments. */
+ #define MAX_ARG_CMDS 10
+ 
+@@ -1030,6 +1031,7 @@
+ #endif
+ 	    )
+     {
++	UBSI_LOOP_ENTRY(1);
+ 	if (stuff_empty())
+ 	{
+ 	    did_check_timestamps = FALSE;
+@@ -1252,13 +1254,16 @@
+ 	 */
+ 	if (exmode_active)
+ 	{
+-	    if (noexmode)   /* End of ":global/path/visual" commands */
++	    if (noexmode) {  /* End of ":global/path/visual" commands */
++		UBSI_LOOP_EXIT(1);
+ 		return;
++	    }
+ 	    do_exmode(exmode_active == EXMODE_VIM);
+ 	}
+ 	else
+ 	    normal_cmd(&oa, TRUE);
+     }
++    UBSI_LOOP_EXIT(1);
+ }
+ 
+ 
+diff -Naru vim73/src/memline.c vim73_UBSI/src/memline.c
+--- vim73/src/memline.c	2010-08-08 06:11:46.000000000 -0700
++++ vim73_UBSI/src/memline.c	2016-07-16 12:29:21.805913113 -0700
+@@ -47,6 +47,7 @@
+ #endif
+ 
+ #include "vim.h"
++#include "UBSI.h"
+ 
+ #ifndef UNIX		/* it's in os_unix.h for Unix */
+ # include <time.h>
+@@ -2468,6 +2469,7 @@
+      * Don't use the last used line when 'swapfile' is reset, need to load all
+      * blocks.
+      */
++    UBSI_MEM_READ(&(buf->b_ml.ml_line_lnum));
+     if (buf->b_ml.ml_line_lnum != lnum || mf_dont_release)
+     {
+ 	ml_flush_line(buf);
+@@ -2494,6 +2496,7 @@
+ 
+ 	ptr = (char_u *)dp + ((dp->db_index[lnum - buf->b_ml.ml_locked_low]) & DB_INDEX_MASK);
+ 	buf->b_ml.ml_line_ptr = ptr;
++	UBSI_MEM_WRITE(&(buf->b_ml.ml_line_lnum));
+ 	buf->b_ml.ml_line_lnum = lnum;
+ 	buf->b_ml.ml_flags &= ~ML_LINE_DIRTY;
+     }
+@@ -3418,6 +3421,7 @@
+     int		i;
+     static int  entered = FALSE;
+ 
++    UBSI_MEM_READ(&(buf->b_ml.ml_line_lnum));
+     if (buf->b_ml.ml_line_lnum == 0 || buf->b_ml.ml_mfp == NULL)
+ 	return;		/* nothing to do */
+ 
+diff -Naru vim73/src/ops.c vim73_UBSI/src/ops.c
+--- vim73/src/ops.c	2010-08-01 05:16:08.000000000 -0700
++++ vim73_UBSI/src/ops.c	2016-07-16 12:29:03.853204914 -0700
+@@ -13,6 +13,7 @@
+  */
+ 
+ #include "vim.h"
++#include "UBSI.h"
+ 
+ /*
+  * Number of registers.
+@@ -2888,6 +2889,7 @@
+ 	--yanklines;
+     }
+ 
++    UBSI_MEM_WRITE(&(y_current->y_size));
+     y_current->y_size = yanklines;
+     y_current->y_type = yanktype;   /* set the yank register type */
+ #ifdef FEAT_VISUAL
+@@ -3166,6 +3168,8 @@
+     y_current->y_array[y_idx] = pnew;
+     copy_spaces(pnew, (size_t)bd->startspaces);
+     pnew += bd->startspaces;
++    UBSI_MEM_READ(bd->textstart);
++    UBSI_MEM_WRITE(pnew);
+     mch_memmove(pnew, bd->textstart, (size_t)bd->textlen);
+     pnew += bd->textlen;
+     copy_spaces(pnew, (size_t)bd->endspaces);
+@@ -3341,6 +3345,7 @@
+ #ifdef FEAT_VISUAL
+ 	y_width = y_current->y_width;
+ #endif
++	UBSI_MEM_READ(&(y_current->y_size));
+ 	y_size = y_current->y_size;
+ 	y_array = y_current->y_array;
+     }
+@@ -3687,6 +3692,8 @@
+ 		newp = alloc_check((unsigned)(STRLEN(oldp) + totlen + 1));
+ 		if (newp == NULL)
+ 		    goto end;		/* alloc() will give error message */
++		UBSI_MEM_READ(oldp);
++		UBSI_MEM_WRITE(newp);
+ 		mch_memmove(newp, oldp, (size_t)col);
+ 		ptr = newp + col;
+ 		for (i = 0; i < count; ++i)
+diff -Naru vim73/src/UBSI.h vim73_UBSI/src/UBSI.h
+--- vim73/src/UBSI.h	1969-12-31 16:00:00.000000000 -0800
++++ vim73_UBSI/src/UBSI.h	2016-07-16 12:29:03.853204914 -0700
+@@ -0,0 +1,28 @@
++#ifndef UBSI_DEFINE
++#define UBSI_DEFINE
++
++#define UBSI_MEM_WRITE(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-300, high); \
++  kill(-301, low); \
++}
++
++#define UBSI_MEM_READ(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-200, high); \
++  kill(-201, low); \
++}
++
++#define UBSI_LOOP_ENTRY(loopId) { \
++  kill(-100, loopId); \
++}
++
++#define UBSI_LOOP_EXIT(loopId) { \
++  kill(-101, loopId); \
++}
++
++#endif

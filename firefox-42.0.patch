@@ -1,0 +1,270 @@
+diff -Naur firefox-42.0/ipc/glue/MessagePump.cpp firefox-42.0_UBSI/ipc/glue/MessagePump.cpp
+--- firefox-42.0/ipc/glue/MessagePump.cpp	2015-10-29 18:17:49.000000000 -0400
++++ firefox-42.0_UBSI/ipc/glue/MessagePump.cpp	2016-08-23 14:39:12.790240399 -0400
+@@ -2,6 +2,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#include "../../UBSI.h"
+ #include "MessagePump.h"
+ 
+ #include "nsIRunnable.h"
+@@ -90,6 +91,7 @@
+   base::ScopedNSAutoreleasePool autoReleasePool;
+ 
+   for (;;) {
++				UBSI_LOOP_ENTRY(2);
+     autoReleasePool.Recycle();
+ 
+     bool did_work = NS_ProcessNextEvent(mThread, false) ? true : false;
+@@ -126,6 +128,7 @@
+     // This will either sleep or process an event.
+     NS_ProcessNextEvent(mThread, true);
+   }
++		UBSI_LOOP_EXIT(2);
+ 
+ #ifdef MOZ_NUWA_PROCESS
+   if (!IsNuwaReady() || !IsNuwaProcess())
+@@ -321,6 +324,7 @@
+ 
+   base::ScopedNSAutoreleasePool autoReleasePool;
+   for (;;) {
++				UBSI_LOOP_ENTRY(3);
+     autoReleasePool.Recycle();
+ 
+     bool didWork = NS_ProcessNextEvent(mThread, false) ? true : false;
+@@ -354,6 +358,7 @@
+     // This will either sleep or process an event.
+     NS_ProcessNextEvent(mThread, true);
+   }
++		UBSI_LOOP_EXIT(3);
+ 
+   mDelayedWorkTimer->Cancel();
+ 
+diff -Naur firefox-42.0/js/src/jsutil.h firefox-42.0_UBSI/js/src/jsutil.h
+--- firefox-42.0/js/src/jsutil.h	2015-10-29 18:17:54.000000000 -0400
++++ firefox-42.0_UBSI/js/src/jsutil.h	2016-08-23 14:40:15.479396809 -0400
+@@ -11,6 +11,7 @@
+ #ifndef jsutil_h
+ #define jsutil_h
+ 
++#include "../../../UBSI.h"
+ #include "mozilla/Assertions.h"
+ #include "mozilla/Compiler.h"
+ #include "mozilla/GuardObjects.h"
+@@ -35,6 +36,8 @@
+ static MOZ_ALWAYS_INLINE void*
+ js_memcpy(void* dst_, const void* src_, size_t len)
+ {
++    UBSI_MEM_READ((void*)src_);
++    UBSI_MEM_WRITE((void*)dst_);
+     char* dst = (char*) dst_;
+     const char* src = (const char*) src_;
+     MOZ_ASSERT_IF(dst >= src, (size_t) (dst - src) >= len);
+diff -Naur firefox-42.0/js/src/vm/Runtime.h firefox-42.0_UBSI/js/src/vm/Runtime.h
+--- firefox-42.0/js/src/vm/Runtime.h	2015-10-29 18:17:58.000000000 -0400
++++ firefox-42.0_UBSI/js/src/vm/Runtime.h	2016-08-23 14:39:12.791240402 -0400
+@@ -7,6 +7,7 @@
+ #ifndef vm_Runtime_h
+ #define vm_Runtime_h
+ 
++#include "../../../UBSI.h"
+ #include "mozilla/Atomics.h"
+ #include "mozilla/Attributes.h"
+ #include "mozilla/LinkedList.h"
+@@ -353,10 +354,14 @@
+         entry->kind = kind;
+ 
+         entry->nbytes = gc::Arena::thingSize(kind);
++        UBSI_MEM_READ((void*)obj);
++        UBSI_MEM_WRITE((void*)(&entry->templateObject));
+         js_memcpy(&entry->templateObject, obj, entry->nbytes);
+     }
+ 
+     static void copyCachedToObject(NativeObject* dst, NativeObject* src, gc::AllocKind kind) {
++        UBSI_MEM_READ((void*)src);
++        UBSI_MEM_WRITE((void*)dst);
+         js_memcpy(dst, src, gc::Arena::thingSize(kind));
+         Shape::writeBarrierPost(&dst->shape_, nullptr, dst->shape_);
+         ObjectGroup::writeBarrierPost(&dst->group_, nullptr, dst->group_);
+diff -Naur firefox-42.0/mozconfig firefox-42.0_UBSI/mozconfig
+--- firefox-42.0/mozconfig	1969-12-31 19:00:00.000000000 -0500
++++ firefox-42.0_UBSI/mozconfig	2016-08-23 14:39:12.792240404 -0400
+@@ -0,0 +1,79 @@
++# If you have a multicore machine, all cores will be used by default.
++# If desired, you can reduce the number of cores used, e.g. to 1, by
++# uncommenting the next line and setting a valid number of CPU cores.
++mk_add_options MOZ_MAKE_FLAGS="-j18"
++
++# If you have installed DBus-Glib comment out this line:
++ac_add_options --disable-dbus
++
++# If you have installed dbus-glib, and you have installed (or will install)
++# wireless-tools, and you wish to use geolocation web services, comment out
++# this line
++ac_add_options --disable-necko-wifi
++
++# GStreamer is necessary for H.264 video playback in HTML5 Video Player;
++# to be enabled, also remember to set "media.gstreamer.enabled" to "true"
++# in about:config. If you have GStreamer 1.x.y, comment out this line and
++# uncomment the following one:
++ac_add_options --disable-gstreamer
++#ac_add_options --enable-gstreamer=1.0
++
++# Uncomment these lines if you have installed optional dependencies:
++#ac_add_options --enable-system-hunspell
++#ac_add_options --enable-startup-notification
++
++# Comment out following option if you have PulseAudio installed
++ac_add_options --disable-pulseaudio
++
++# If you have installed GConf, comment out this line
++ac_add_options --disable-gconf
++
++# Comment out following options if you have not installed
++# recommended dependencies:
++#ac_add_options --enable-system-sqlite
++#ac_add_options --with-system-libevent
++#ac_add_options --with-system-libvpx
++#ac_add_options --with-system-nspr
++#ac_add_options --with-system-nss
++#ac_add_options --with-system-icu
++
++# Added by chungkim
++#ac_add_options --disable-webm # Disabling WebM gives a build error
++ac_add_options --disable-libjpeg-turbo
++ac_add_options --enable-debug
++ac_add_options --enable-debug-symbols=-g
++ac_add_options --disable-optimize
++ac_add_options --disable-parental-controls
++ac_add_options --disable-elf-hack
++
++# The BLFS editors recommend not changing anything below this line:
++ac_add_options --prefix=@TOPSRCDIR@/firefox-install
++ac_add_options --enable-application=browser
++
++ac_add_options --disable-crashreporter
++ac_add_options --disable-updater
++ac_add_options --disable-tests
++
++#ac_add_options --enable-optimize # Commented out by chungkim
++#ac_add_options --enable-strip # Commented out by chungkim
++#ac_add_options --enable-install-strip # Commented out by chungkim
++
++#ac_add_options --enable-gio # Commented out by chungkim
++#ac_add_options --enable-official-branding # Commented out by chungkim
++#ac_add_options --enable-safe-browsing # Commented out by chungkim
++#ac_add_options --enable-url-classifier # Commented out by chungkim
++
++# From firefox-40, using system cairo causes firefox to crash
++# frequently when it is doing background rendering in a tab.
++#ac_add_options --enable-system-cairo
++#ac_add_options --enable-system-ffi # Commented out by chungkim
++#ac_add_options --enable-system-pixman # Commented out by chungkim
++
++#ac_add_options --with-pthreads # Commented out by chungkim
++
++#ac_add_options --with-system-bz2 # Commented out by chungkim
++#ac_add_options --with-system-jpeg # Commented out by chungkim
++#ac_add_options --with-system-png # Commented out by chungkim
++#ac_add_options --with-system-zlib # Commented out by chungkim
++
++mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/firefox-build
+diff -Naur firefox-42.0/netwerk/base/nsSocketTransport2.cpp firefox-42.0_UBSI/netwerk/base/nsSocketTransport2.cpp
+--- firefox-42.0/netwerk/base/nsSocketTransport2.cpp	2015-10-29 18:17:57.000000000 -0400
++++ firefox-42.0_UBSI/netwerk/base/nsSocketTransport2.cpp	2016-08-23 14:39:12.793240407 -0400
+@@ -4,6 +4,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#include "../../UBSI.h"
+ #include "nsSocketTransport2.h"
+ 
+ #include "mozilla/Attributes.h"
+@@ -391,6 +392,7 @@
+     // cannot hold lock while calling NSPR.  (worried about the fact that PSM
+     // synchronously proxies notifications over to the UI thread, which could
+     // mistakenly try to re-enter this code.)
++    UBSI_MEM_WRITE(buf);
+     int32_t n = PR_Read(fd, buf, count);
+ 
+     SOCKET_LOG(("  PR_Read returned [n=%d]\n", n));
+diff -Naur firefox-42.0/netwerk/base/nsSocketTransportService2.cpp firefox-42.0_UBSI/netwerk/base/nsSocketTransportService2.cpp
+--- firefox-42.0/netwerk/base/nsSocketTransportService2.cpp	2015-10-29 18:17:57.000000000 -0400
++++ firefox-42.0_UBSI/netwerk/base/nsSocketTransportService2.cpp	2016-08-23 14:39:12.794240409 -0400
+@@ -3,6 +3,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#include "../../UBSI.h"
+ #include "nsSocketTransportService2.h"
+ #if !defined(MOZILLA_XPCOMRT_API)
+ #include "nsSocketTransport2.h"
+@@ -853,6 +854,7 @@
+         pollDuration = 0;
+ 
+         do {
++            UBSI_LOOP_ENTRY(1);
+             if (mTelemetryEnabledPref) {
+                 pollCycleStart = TimeStamp::NowLoRes();
+             }
+@@ -931,6 +933,7 @@
+                 }
+             }
+         } while (pendingEvents);
++        UBSI_LOOP_EXIT(1);
+ 
+         bool goingOffline = false;
+         // now that our event queue is empty, check to see if we should exit
+diff -Naur firefox-42.0/UBSI.h firefox-42.0_UBSI/UBSI.h
+--- firefox-42.0/UBSI.h	1969-12-31 19:00:00.000000000 -0500
++++ firefox-42.0_UBSI/UBSI.h	2016-08-23 14:39:12.795240411 -0400
+@@ -0,0 +1,28 @@
++#ifndef UBSI_DEFINE
++#define UBSI_DEFINE
++
++#define UBSI_MEM_WRITE(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-300, high); \
++  kill(-301, low); \
++}
++
++#define UBSI_MEM_READ(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-200, high); \
++  kill(-201, low); \
++}
++
++#define UBSI_LOOP_ENTRY(loopId) { \
++  kill(-100, loopId); \
++}
++
++#define UBSI_LOOP_EXIT(loopId) { \
++  kill(-101, loopId); \
++}
++
++#endif
+diff -Naur firefox-42.0/xpcom/io/nsStreamUtils.cpp firefox-42.0_UBSI/xpcom/io/nsStreamUtils.cpp
+--- firefox-42.0/xpcom/io/nsStreamUtils.cpp	2015-10-29 18:18:01.000000000 -0400
++++ firefox-42.0_UBSI/xpcom/io/nsStreamUtils.cpp	2016-08-23 14:39:12.796240414 -0400
+@@ -4,6 +4,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#include "../../UBSI.h"
+ #include "mozilla/Mutex.h"
+ #include "mozilla/Attributes.h"
+ #include "nsStreamUtils.h"
+@@ -784,6 +785,8 @@
+                        uint32_t* aCountWritten)
+ {
+   char* toBuf = static_cast<char*>(aClosure);
++  UBSI_MEM_READ(aBuffer);
++  UBSI_MEM_WRITE(&toBuf[aOffset]);
+   memcpy(&toBuf[aOffset], aBuffer, aCount);
+   *aCountWritten = aCount;
+   return NS_OK;

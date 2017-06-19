@@ -1,0 +1,59 @@
+diff -Naru bash-4.3.30/eval.c bash-4.3.30_UBSI/eval.c
+--- bash-4.3.30/eval.c	2013-10-14 09:22:43.000000000 -0400
++++ bash-4.3.30_UBSI/eval.c	2016-05-20 22:21:49.430897196 -0400
+@@ -18,6 +18,7 @@
+    along with Bash.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
++#include "UBSI.h"
+ #include "config.h"
+ 
+ #if defined (HAVE_UNISTD_H)
+@@ -77,6 +78,7 @@
+ 
+   while (EOF_Reached == 0)
+     {
++						UBSI_LOOP_ENTRY(1);
+       int code;
+ 
+       code = setjmp_nosigs (top_level);
+@@ -178,6 +180,7 @@
+       if (just_one_command)
+ 	EOF_Reached = EOF;
+     }
++				UBSI_LOOP_EXIT(1);
+   indirection_level--;
+   return (last_command_exit_value);
+ }
+diff -Naru bash-4.3.30/UBSI.h bash-4.3.30_UBSI/UBSI.h
+--- bash-4.3.30/UBSI.h	1969-12-31 19:00:00.000000000 -0500
++++ bash-4.3.30_UBSI/UBSI.h	2016-05-20 22:22:31.074897196 -0400
+@@ -0,0 +1,28 @@
++#ifndef UBSI_DEFINE
++#define UBSI_DEFINE
++
++#define UBSI_MEM_WRITE(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-300, high); \
++  kill(-301, low); \
++}
++
++#define UBSI_MEM_READ(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-200, high); \
++  kill(-201, low); \
++}
++
++#define UBSI_LOOP_ENTRY(loopId) { \
++  kill(-100, loopId); \
++}
++
++#define UBSI_LOOP_EXIT(loopId) { \
++  kill(-101, loopId); \
++}
++
++#endif

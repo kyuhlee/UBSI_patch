@@ -1,0 +1,131 @@
+diff -Naur ./w3m-0.5.3/istream.c ./w3m-0.5.3_UBSI/istream.c
+--- ./w3m-0.5.3/istream.c	2011-01-04 04:22:22.000000000 -0500
++++ ./w3m-0.5.3_UBSI/istream.c	2016-05-20 00:16:50.782897196 -0400
+@@ -22,8 +22,8 @@
+ static void basic_close(int *handle);
+ static int basic_read(int *handle, char *buf, int len);
+ 
+-static void file_close(struct file_handle *handle);
+-static int file_read(struct file_handle *handle, char *buf, int len);
++static void file_close(struct istream_file_handle *handle);
++static int file_read(struct istream_file_handle *handle, char *buf, int len);
+ 
+ static int str_read(Str handle, char *buf, int len);
+ 
+@@ -114,7 +114,7 @@
+     stream = New(union input_stream);
+     init_base_stream(&stream->base, STREAM_BUF_SIZE);
+     stream->file.type = IST_FILE;
+-    stream->file.handle = New(struct file_handle);
++    stream->file.handle = New(struct istream_file_handle);
+     stream->file.handle->f = f;
+     if (closep)
+ 	stream->file.handle->close = closep;
+@@ -658,13 +658,13 @@
+ }
+ 
+ static void
+-file_close(struct file_handle *handle)
++file_close(struct istream_file_handle *handle)
+ {
+     handle->close(handle->f);
+ }
+ 
+ static int
+-file_read(struct file_handle *handle, char *buf, int len)
++file_read(struct istream_file_handle *handle, char *buf, int len)
+ {
+     return fread(buf, 1, len, handle->f);
+ }
+diff -Naur ./w3m-0.5.3/istream.h ./w3m-0.5.3_UBSI/istream.h
+--- ./w3m-0.5.3/istream.h	2003-10-20 12:41:56.000000000 -0400
++++ ./w3m-0.5.3_UBSI/istream.h	2016-05-20 00:16:50.782897196 -0400
+@@ -20,7 +20,7 @@
+ 
+ typedef struct stream_buffer *StreamBuffer;
+ 
+-struct file_handle {
++struct istream_file_handle {
+     FILE *f;
+     void (*close) ();
+ };
+@@ -53,7 +53,7 @@
+ 
+ struct file_stream {
+     struct stream_buffer stream;
+-    struct file_handle *handle;
++    struct istream_file_handle *handle;
+     char type;
+     char iseos;
+     int (*read) ();
+diff -Naur ./w3m-0.5.3/main.c ./w3m-0.5.3_UBSI/main.c
+--- ./w3m-0.5.3/main.c	2011-01-04 04:42:19.000000000 -0500
++++ ./w3m-0.5.3_UBSI/main.c	2016-05-20 00:16:50.782897196 -0400
+@@ -1,5 +1,6 @@
+ /* $Id: main.c,v 1.270 2010/08/24 10:11:51 htrb Exp $ */
+ #define MAINPROGRAM
++#include "UBSI.h"
+ #include "fm.h"
+ #include <signal.h>
+ #include <setjmp.h>
+@@ -833,7 +834,12 @@
+     mySignal(SIGPIPE, SigPipe);
+ #endif
+ 
++#if GC_VERSION_MAJOR >= 7 && GC_VERSION_MINOR >= 2
++    orig_GC_warn_proc = GC_get_warn_proc();
++    GC_set_warn_proc(wrap_GC_warn_proc);
++#else
+     orig_GC_warn_proc = GC_set_warn_proc(wrap_GC_warn_proc);
++#endif
+     err_msg = Strnew();
+     if (load_argc == 0) {
+ 	/* no URL specified */
+@@ -1046,6 +1052,7 @@
+ 	_goLine(line_str);
+     }
+     for (;;) {
++						UBSI_LOOP_ENTRY(1);
+ 	if (add_download_list) {
+ 	    add_download_list = FALSE;
+ 	    ldDL();
+@@ -1154,6 +1161,7 @@
+ 	CurrentKey = -1;
+ 	CurrentKeyData = NULL;
+     }
++				UBSI_LOOP_EXIT(1);
+ }
+ 
+ static void
+diff -Naur ./w3m-0.5.3/UBSI.h ./w3m-0.5.3_UBSI/UBSI.h
+--- ./w3m-0.5.3/UBSI.h	1969-12-31 19:00:00.000000000 -0500
++++ ./w3m-0.5.3_UBSI/UBSI.h	2016-05-20 00:17:03.370897196 -0400
+@@ -0,0 +1,28 @@
++#ifndef UBSI_DEFINE
++#define UBSI_DEFINE
++
++#define UBSI_MEM_WRITE(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-300, high); \
++  kill(-301, low); \
++}
++
++#define UBSI_MEM_READ(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-200, high); \
++  kill(-201, low); \
++}
++
++#define UBSI_LOOP_ENTRY(loopId) { \
++  kill(-100, loopId); \
++}
++
++#define UBSI_LOOP_EXIT(loopId) { \
++  kill(-101, loopId); \
++}
++
++#endif

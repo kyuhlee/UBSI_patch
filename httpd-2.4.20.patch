@@ -1,0 +1,102 @@
+diff -Naur httpd-2.4.20/include/UBSI.h httpd-2.4.20_UBSI/include/UBSI.h
+--- httpd-2.4.20/include/UBSI.h	1969-12-31 19:00:00.000000000 -0500
++++ httpd-2.4.20_UBSI/include/UBSI.h	2016-05-19 21:05:54.598897196 -0400
+@@ -0,0 +1,28 @@
++#ifndef UBSI_DEFINE
++#define UBSI_DEFINE
++
++#define UBSI_MEM_WRITE(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-300, high); \
++  kill(-301, low); \
++}
++
++#define UBSI_MEM_READ(addr) { \
++  intptr_t value = (intptr_t)addr; \
++  uint32_t high = value >> 32; \
++  uint32_t low = value; \
++  kill(-200, high); \
++  kill(-201, low); \
++}
++
++#define UBSI_LOOP_ENTRY(loopId) { \
++  kill(-100, loopId); \
++}
++
++#define UBSI_LOOP_EXIT(loopId) { \
++  kill(-101, loopId); \
++}
++
++#endif
+diff -Naur httpd-2.4.20/server/mpm/worker/fdqueue.c httpd-2.4.20_UBSI/server/mpm/worker/fdqueue.c
+--- httpd-2.4.20/server/mpm/worker/fdqueue.c	2011-01-27 14:34:38.000000000 -0500
++++ httpd-2.4.20_UBSI/server/mpm/worker/fdqueue.c	2016-05-19 21:02:07.326897196 -0400
+@@ -16,6 +16,7 @@
+ 
+ #include "fdqueue.h"
+ #include "apr_atomic.h"
++#include "UBSI.h"
+ 
+ typedef struct recycled_pool {
+     apr_pool_t *pool;
+@@ -314,6 +315,7 @@
+     AP_DEBUG_ASSERT(!queue->terminated);
+     AP_DEBUG_ASSERT(!ap_queue_full(queue));
+ 
++				UBSI_MEM_WRITE(elem);
+     elem = &queue->data[queue->in];
+     queue->in++;
+     if (queue->in >= queue->bounds)
+@@ -371,6 +373,7 @@
+     if (queue->out >= queue->bounds)
+         queue->out -= queue->bounds;
+     queue->nelts--;
++				UBSI_MEM_READ(elem);
+     *sd = elem->sd;
+     *p = elem->p;
+ #ifdef AP_DEBUG
+diff -Naur httpd-2.4.20/server/mpm/worker/worker.c httpd-2.4.20_UBSI/server/mpm/worker/worker.c
+--- httpd-2.4.20/server/mpm/worker/worker.c	2016-04-01 08:26:05.000000000 -0400
++++ httpd-2.4.20_UBSI/server/mpm/worker/worker.c	2016-05-19 21:05:44.374897196 -0400
+@@ -32,6 +32,7 @@
+ #include "apr_poll.h"
+ 
+ #include <stdlib.h>
++#include "UBSI.h"
+ 
+ #define APR_WANT_STRFUNC
+ #include "apr_want.h"
+@@ -742,6 +743,7 @@
+     /* TODO: Switch to a system where threads reuse the results from earlier
+        poll calls - manoj */
+     while (1) {
++								UBSI_LOOP_ENTRY(1);
+         /* TODO: requests_this_child should be synchronized - aaron */
+         if (requests_this_child <= 0) {
+             check_infinite_requests();
+@@ -891,6 +893,7 @@
+             break;
+         }
+     }
++				UBSI_LOOP_EXIT(1);
+ 
+     ap_close_listeners_ex(my_bucket->listeners);
+     ap_queue_term(worker_queue);
+@@ -936,6 +939,7 @@
+ #endif
+ 
+     while (!workers_may_exit) {
++								UBSI_LOOP_ENTRY(2);
+         if (!is_idle) {
+             rv = ap_queue_info_set_idle(worker_queue_info, last_ptrans);
+             last_ptrans = NULL;
+@@ -993,6 +997,7 @@
+         apr_pool_clear(ptrans);
+         last_ptrans = ptrans;
+     }
++				UBSI_LOOP_EXIT(2);
+ 
+     ap_update_child_status_from_indexes(process_slot, thread_slot,
+         (dying) ? SERVER_DEAD : SERVER_GRACEFUL, (request_rec *) NULL);
