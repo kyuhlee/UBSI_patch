@@ -1,14 +1,6 @@
 #!/bin/bash
 #Firefox-42.0: 
 cd $HOME/UBSI_patch
-wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
-tar xzvf yasm-1.3.0.tar.gz
-cd yasm-1.3.0
-./configure && make
-sudo make install
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-
-cd $HOME/UBSI_patch
 wget https://archive.mozilla.org/pub/firefox/releases/42.0/source/firefox-42.0.source.tar.xz
 tar xf firefox-42.0.source.tar.xz
 cd firefox-42.0 && patch -p1 < ../firefox-42.0.patch
