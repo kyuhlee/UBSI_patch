@@ -2,10 +2,11 @@
 mkdir $HOME/TRACE
 mkdir $HOME/TRACE/BIN
 
-sudo apt-get -y install libcurl4-openssl-dev
+sudo apt-get -y install libcurl4-openssl-dev gtk+-2
 sudo apt-get -y install libdbus-glib-1-dev libxt-dev mesa-common-dev libgconf2-dev libgtk2.0-dev yasm libasound2-dev libpulse-dev libncurses-dev libgc-dev libssl-dev libgnutls28-dev glib2.0-dev libgc-dev libslang2-dev libapr1-dev libaprutil1-dev libpcre3 libpcre3-dev libevent-dev intltool
 sudo apt-get -y install libcurl4-openssl-dev
 sudo apt-get -y install zip unzip
+
 
 
 # httpd-2.2.21:
