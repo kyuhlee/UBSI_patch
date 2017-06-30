@@ -204,6 +204,7 @@ cd firefox-42.0 && patch -p1 < ../firefox-42.0.patch
 cd ..
 sudo mv ./firefox-42.0 /usr/local/
 sudo chown -R root:root /usr/local/firefox-42.0/
+sudo apt-get -y install gtk+-2 yasm libasound2-dev libxt-dev
 cd /usr/local/firefox-42.0/
 sudo ./configure 
 sudo make
