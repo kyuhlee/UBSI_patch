@@ -4,12 +4,15 @@ cd $HOME/UBSI_patch
 #wget https://archive.mozilla.org/pub/firefox/releases/42.0/source/firefox-42.0.source.tar.xz
 tar xf firefox-42.0.source.tar.xz
 cd firefox-42.0 && patch -p1 < ../firefox-42.0.patch
+cd ..
+sudo mv ./firefox-42.0 /usr/local/
+sudo chown -R $USER:$USER /usr/local/firefox-42.0/
+cd /usr/local/firefox-42.0
 mkdir firefox-build
 cd firefox-build
-$HOME/UBSI_patch/firefox-42.0/configure
+/usr/local/firefox-42.0/configure
 make
-cd $HOME/UBSI_patch
-sudo mv ./firefox-42.0 /usr/local/
+
 sudo chown -R root:root /usr/local/firefox-42.0/
 
 #unset DISPLAY
