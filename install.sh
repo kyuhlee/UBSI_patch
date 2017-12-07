@@ -2,11 +2,16 @@
 mkdir $HOME/TRACE
 mkdir $HOME/TRACE/BIN
 
-sudo apt-get -y install libcurl4-openssl-dev gtk+-2
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get -y update 
+sudo apt-get -y install libcurl4-openssl-dev g++-4.9
 sudo apt-get -y install libdbus-glib-1-dev libxt-dev mesa-common-dev libgconf2-dev libgtk2.0-dev yasm libasound2-dev libpulse-dev libncurses-dev libgc-dev libssl-dev libgnutls28-dev glib2.0-dev libgc-dev libslang2-dev libapr1-dev libaprutil1-dev libpcre3 libpcre3-dev libevent-dev intltool
 sudo apt-get -y install libcurl4-openssl-dev
 sudo apt-get -y install zip unzip
+sudo apt-get -y install g++-4.9 rustc cargo
 
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 50
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 50
 
 
 # httpd-2.2.21:
@@ -197,18 +202,26 @@ cp /usr/sbin/sendmail $HOME/TRACE/BIN
 
 
 #Firefox-42.0: 
-cd $HOME/UBSI_patch
-wget https://archive.mozilla.org/pub/firefox/releases/42.0/source/firefox-42.0.source.tar.xz
-tar xf firefox-42.0.source.tar.xz
-cd firefox-42.0 && patch -p1 < ../firefox-42.0.patch
-cd ..
-sudo mv ./firefox-42.0 /usr/local/
-sudo chown -R root:root /usr/local/firefox-42.0/
-sudo apt-get -y install gtk+-2 yasm libasound2-dev libxt-dev
-cd /usr/local/firefox-42.0/
-sudo ./configure 
-sudo make
-unset DISPLAY
-export $(dbus-launch)
-sudo ln -f -s /usr/local/firefox-42.0/firefox-build/dist/bin/firefox /usr/local/bin/
+#cd $HOME/UBSI_patch
+#wget https://archive.mozilla.org/pub/firefox/releases/42.0/source/firefox-42.0.source.tar.xz
+#tar xf firefox-42.0.source.tar.xz
+#cd firefox-42.0 && patch -p1 < ../firefox-42.0.patch
+#cd ..
+#sudo mv ./firefox-42.0 /usr/local/
+#sudo chown -R root:root /usr/local/firefox-42.0/
+#cd /usr/local/firefox-42.0/
+#sudo ./configure 
+#sudo make
+#unset DISPLAY
+#export $(dbus-launch)
+#sudo ln -f -s /usr/local/firefox-42.0/firefox-build/dist/bin/firefox /usr/local/bin/
 
+#Firefox-54.0.1: 
+cd $HOME/UBSI_patch
+wget https://ftp.mozilla.org/pub/firefox/releases/54.0.1/source/firefox-54.0.1.source.tar.xz
+tar xf firefox-54.0.1.source.tar.xz
+cd firefox-54.0.1 && patch -p1 < ../firefox-54.0.1.patch
+mkdir src && cd src
+../mach bootstrap
+../mach build
+ln -f -s $HOME/UBSI_patch/firefox-54.0.1/obj-x86_64-pc-linux-gnu/dist/bin/ $HOME/TRACE/BIN/
