@@ -161,8 +161,6 @@ cd /home/$user/UBSI_patch
 #sudo ln -f -s /usr/local/firefox-42.0/firefox-build/dist/bin/firefox /usr/local/bin/
 
 
-
-
 wget https://ftp.mozilla.org/pub/firefox/releases/54.0.1/source/firefox-54.0.1.source.tar.xz
 tar xf firefox-54.0.1.source.tar.xz
 mkdir /home/$user/.mozbuild
@@ -174,7 +172,7 @@ cd /usr/local/firefox-54.0.1/
 sudo mkdir src && cd src
 sudo ../mach bootstrap
 sudo ../mach build
-ln -f -s /usr/local/firefox-54.0.1/obj-x86_64-pc-linux-gnu/dist/bin/firefox /usr/local/bin
+sudo ln -f -s /usr/local/firefox-54.0.1/obj-x86_64-pc-linux-gnu/dist/bin/firefox /usr/local/bin
 
 /usr/local/bin/firefox --setDefaultBrowser &
 sleep 20
