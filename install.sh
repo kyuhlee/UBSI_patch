@@ -203,6 +203,3 @@ sudo ../mach bootstrap
 sudo ../mach build
 sudo ln -f -s /usr/local/firefox-54.0.1/obj-x86_64-pc-linux-gnu/dist/bin/firefox /usr/local/bin
 
-/usr/local/bin/firefox --setDefaultBrowser &
-sleep 20
-killall -9 firefox
