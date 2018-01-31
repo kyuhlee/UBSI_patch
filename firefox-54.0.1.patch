@@ -1,6 +1,21 @@
+diff -Naur firefox-54.0.1/browser/components/nsBrowserGlue.js firefox-54.0.1_UBSI/browser/components/nsBrowserGlue.js
+--- firefox-54.0.1/browser/components/nsBrowserGlue.js	2017-06-15 16:51:57.000000000 -0400
++++ firefox-54.0.1_UBSI/browser/components/nsBrowserGlue.js	2018-01-31 13:18:50.263350433 -0500
+@@ -1091,8 +1091,9 @@
+ 
+     // Perform default browser checking.
+     if (ShellService) {
+-      let shouldCheck = AppConstants.DEBUG ? false :
+-                                             ShellService.shouldCheckDefaultBrowser;
++						let shouldCheck = false;
++//      let shouldCheck = AppConstants.DEBUG ? false :
++//                                             ShellService.shouldCheckDefaultBrowser;
+ 
+       const skipDefaultBrowserCheck =
+         Services.prefs.getBoolPref("browser.shell.skipDefaultBrowserCheckOnFirstRun") &&
 diff -Naur firefox-54.0.1/ipc/glue/MessagePump.cpp firefox-54.0.1_UBSI/ipc/glue/MessagePump.cpp
 --- firefox-54.0.1/ipc/glue/MessagePump.cpp	2017-06-15 16:51:57.000000000 -0400
-+++ firefox-54.0.1_UBSI/ipc/glue/MessagePump.cpp	2018-01-26 20:49:12.707196209 -0500
++++ firefox-54.0.1_UBSI/ipc/glue/MessagePump.cpp	2018-01-31 13:18:27.603238067 -0500
 @@ -4,6 +4,7 @@
   * License, v. 2.0. If a copy of the MPL was not distributed with this
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -43,7 +58,7 @@ diff -Naur firefox-54.0.1/ipc/glue/MessagePump.cpp firefox-54.0.1_UBSI/ipc/glue/
  
 diff -Naur firefox-54.0.1/js/src/jsutil.h firefox-54.0.1_UBSI/js/src/jsutil.h
 --- firefox-54.0.1/js/src/jsutil.h	2017-06-15 16:52:06.000000000 -0400
-+++ firefox-54.0.1_UBSI/js/src/jsutil.h	2018-01-26 20:49:12.707196209 -0500
++++ firefox-54.0.1_UBSI/js/src/jsutil.h	2018-01-31 13:18:27.603238067 -0500
 @@ -11,6 +11,7 @@
  #ifndef jsutil_h
  #define jsutil_h
@@ -63,7 +78,7 @@ diff -Naur firefox-54.0.1/js/src/jsutil.h firefox-54.0.1_UBSI/js/src/jsutil.h
      MOZ_ASSERT_IF(dst >= src, (size_t) (dst - src) >= len);
 diff -Naur firefox-54.0.1/netwerk/base/nsSocketTransport2.cpp firefox-54.0.1_UBSI/netwerk/base/nsSocketTransport2.cpp
 --- firefox-54.0.1/netwerk/base/nsSocketTransport2.cpp	2017-06-15 16:52:27.000000000 -0400
-+++ firefox-54.0.1_UBSI/netwerk/base/nsSocketTransport2.cpp	2018-01-26 20:49:12.707196209 -0500
++++ firefox-54.0.1_UBSI/netwerk/base/nsSocketTransport2.cpp	2018-01-31 13:18:27.603238067 -0500
 @@ -4,6 +4,7 @@
   * License, v. 2.0. If a copy of the MPL was not distributed with this
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -82,7 +97,7 @@ diff -Naur firefox-54.0.1/netwerk/base/nsSocketTransport2.cpp firefox-54.0.1_UBS
      SOCKET_LOG(("  PR_Read returned [n=%d]\n", n));
 diff -Naur firefox-54.0.1/netwerk/base/nsSocketTransportService2.cpp firefox-54.0.1_UBSI/netwerk/base/nsSocketTransportService2.cpp
 --- firefox-54.0.1/netwerk/base/nsSocketTransportService2.cpp	2017-06-15 16:52:27.000000000 -0400
-+++ firefox-54.0.1_UBSI/netwerk/base/nsSocketTransportService2.cpp	2018-01-26 20:49:12.707196209 -0500
++++ firefox-54.0.1_UBSI/netwerk/base/nsSocketTransportService2.cpp	2018-01-31 13:18:27.603238067 -0500
 @@ -3,6 +3,7 @@
   * License, v. 2.0. If a copy of the MPL was not distributed with this
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -109,7 +124,7 @@ diff -Naur firefox-54.0.1/netwerk/base/nsSocketTransportService2.cpp firefox-54.
          // now that our event queue is empty, check to see if we should exit
 diff -Naur firefox-54.0.1/python/mozboot/mozboot/bootstrap.py firefox-54.0.1_UBSI/python/mozboot/mozboot/bootstrap.py
 --- firefox-54.0.1/python/mozboot/mozboot/bootstrap.py	2017-06-15 16:52:31.000000000 -0400
-+++ firefox-54.0.1_UBSI/python/mozboot/mozboot/bootstrap.py	2018-01-26 20:49:33.995196209 -0500
++++ firefox-54.0.1_UBSI/python/mozboot/mozboot/bootstrap.py	2018-01-31 13:18:27.603238067 -0500
 @@ -150,7 +150,7 @@
  class Bootstrapper(object):
      """Main class that performs system bootstrap."""
@@ -121,7 +136,7 @@ diff -Naur firefox-54.0.1/python/mozboot/mozboot/bootstrap.py firefox-54.0.1_UBS
          self.finished = finished
 diff -Naur firefox-54.0.1/UBSI.h firefox-54.0.1_UBSI/UBSI.h
 --- firefox-54.0.1/UBSI.h	1969-12-31 19:00:00.000000000 -0500
-+++ firefox-54.0.1_UBSI/UBSI.h	2018-01-26 20:49:12.707196209 -0500
++++ firefox-54.0.1_UBSI/UBSI.h	2018-01-31 13:18:27.603238067 -0500
 @@ -0,0 +1,29 @@
 +#ifndef UBSI_DEFINE
 +#define UBSI_DEFINE
@@ -154,7 +169,7 @@ diff -Naur firefox-54.0.1/UBSI.h firefox-54.0.1_UBSI/UBSI.h
 +
 diff -Naur firefox-54.0.1/xpcom/io/nsStreamUtils.cpp firefox-54.0.1_UBSI/xpcom/io/nsStreamUtils.cpp
 --- firefox-54.0.1/xpcom/io/nsStreamUtils.cpp	2017-06-15 16:52:36.000000000 -0400
-+++ firefox-54.0.1_UBSI/xpcom/io/nsStreamUtils.cpp	2018-01-26 20:49:12.707196209 -0500
++++ firefox-54.0.1_UBSI/xpcom/io/nsStreamUtils.cpp	2018-01-31 13:18:27.603238067 -0500
 @@ -4,6 +4,7 @@
   * License, v. 2.0. If a copy of the MPL was not distributed with this
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
