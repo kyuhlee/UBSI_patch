@@ -5,7 +5,8 @@
 
 user=`whoami`
 
-sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test ppa:mercurial-ppa/releases
+sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+sudo add-apt-repository -y ppa:mercurial-ppa/releases
 sudo apt-get -y update 
 sudo apt-get -y install libcurl4-openssl-dev g++-4.9
 sudo apt-get -y install libdbus-glib-1-dev libxt-dev mesa-common-dev libgconf2-dev libgtk2.0-dev yasm libasound2-dev libpulse-dev libncurses-dev libgc-dev libssl-dev libgnutls28-dev glib2.0-dev libgc-dev libslang2-dev libapr1-dev libaprutil1-dev libpcre3 libpcre3-dev libevent-dev intltool
