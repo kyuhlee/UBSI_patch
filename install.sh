@@ -6,19 +6,15 @@
 user=`whoami`
 cwd=$(pwd)
 
-if [ ! -f ./freshness.time ]; then
-	echo "Cannot find 'freshness.time' file"
-	echo "Run 'git pull' and run 'install.sh' again" 
-	exit
-fi
-
-freshness=$(head -n 1 freshness.time)
 if [ -f ./install.time ]; then
+	commit="$(git show -s --format=%ct)"
 	install=$(head -n 1 install.time)
-	echo "Patch time:        $(date -d @$freshness)"
-	echo "Last install time: $(date -d @$install)"
-	if (( $install > $freshness )); then
-		echo "Done"
+	echo "git commit = $commit, $str the last install = $install"
+
+	echo "Last Git Commit: $(date -d @$commit)"
+	echo "Last Install:    $(date -d @$install)"
+	if (( $install > $commit )); then
+		echo "Exit install"
 		exit
 	fi
 fi
