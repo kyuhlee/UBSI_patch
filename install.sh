@@ -21,16 +21,16 @@ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 50
 
 
 # httpd-2.4.20:
-cd /home/$user/UBSI_patch
 if [ ! -f ./httpd-2.4.20.tar.gz ]; then
 		wget https://archive.apache.org/dist/httpd/httpd-2.4.20.tar.gz
 fi
 tar xzvf httpd-2.4.20.tar.gz
-cd httpd-2.4.20 && patch -p1 < ../httpd-2.4.20.patch
+cd httpd-2.4.20 && patch -N -s -p1 < ../httpd-2.4.20.patch
 ./configure -with-mpm=worker && make 
 sudo make install
 sudo cp -f /usr/local/apache2/bin/httpd /usr/local/bin
 sudo cp -f /home/$user/UBSI_patch/httpd.conf /usr/local/apache2/conf/httpd.conf
+cd ..
 
 
 #vim-7.3:
