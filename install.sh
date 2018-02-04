@@ -9,7 +9,6 @@ cwd=$(pwd)
 if [ -f ./install.time ]; then
 	commit="$(git show -s --format=%ct)"
 	install=$(head -n 1 install.time)
-	echo "git commit = $commit, $str the last install = $install"
 
 	echo "Last Git Commit: $(date -d @$commit)"
 	echo "Last Install:    $(date -d @$install)"
