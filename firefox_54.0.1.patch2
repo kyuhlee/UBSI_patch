@@ -89,24 +89,6 @@ diff -Naur firefox-54.0.1/browser/components/nsBrowserGlue.js firefox-54.0.1_UBS
      /* NB: Keep this in sync with XDRScript. */
  
      /* Some embeddings are not careful to use ExposeObjectToActiveJS as needed. */
---- firefox-54.0.1/dom/workers/WorkerScope.cpp	2017-06-15 16:52:30.000000000 -0400
-+++ firefox-54.0.1_backup/dom/workers/WorkerScope.cpp	2018-02-28 16:39:47.722051935 -0500
-@@ -6,6 +6,7 @@
- 
- #include "WorkerScope.h"
- 
-+#include "../../../UBSI.h"
- #include "jsapi.h"
- #include "mozilla/EventListenerManager.h"
- #include "mozilla/dom/BindingDeclarations.h"
-@@ -708,6 +709,7 @@
-     return;
-   }
- 
-+		UBSI_MEM_WRITE((void*)this);
-   if (mWorkerPrivate->WorkerScriptExecutedSuccessfully()) {
-     RefPtr<Runnable> r = new ReportFetchListenerWarningRunnable(mScope);
-     mWorkerPrivate->DispatchToMainThread(r.forget());
 --- firefox-54.0.1/dom/events/Event.cpp	2017-06-15 16:52:17.000000000 -0400
 +++ firefox-54.0.1_backup/dom/events/Event.cpp	2018-03-01 00:33:50.578051935 -0500
 @@ -4,6 +4,7 @@
@@ -158,40 +140,6 @@ diff -Naur firefox-54.0.1/browser/components/nsBrowserGlue.js firefox-54.0.1_UBS
  
    if (IsTrusted()) {
      // Ensure the caller is permitted to dispatch trusted DOM events.
---- firefox-54.0.1/dom/events/DOMEventTargetHelper.cpp	2017-06-15 16:52:17.000000000 -0400
-+++ firefox-54.0.1_backup/dom/events/DOMEventTargetHelper.cpp	2018-02-28 18:43:28.802051935 -0500
-@@ -4,6 +4,7 @@
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
-+#include "../../../UBSI.h"
- #include "nsContentUtils.h"
- #include "nsIDocument.h"
- #include "mozilla/Sprintf.h"
-@@ -217,6 +218,7 @@
-     NS_ENSURE_SUCCESS(rv, rv);
-   }
- 
-+		UBSI_MEM_WRITE((void*)this);
-   EventListenerManager* elm = GetOrCreateListenerManager();
-   NS_ENSURE_STATE(elm);
-   elm->AddEventListener(aType, aListener, aUseCapture, aWantsUntrusted);
-@@ -275,6 +277,7 @@
- DOMEventTargetHelper::DispatchEvent(nsIDOMEvent* aEvent, bool* aRetVal)
- {
-   nsEventStatus status = nsEventStatus_eIgnore;
-+		UBSI_MEM_READ((void*)aEvent);
-   nsresult rv =
-     EventDispatcher::DispatchDOMEvent(this, nullptr, aEvent, nullptr, &status);
- 
-@@ -287,6 +290,7 @@
- {
-   RefPtr<Event> event = NS_NewDOMEvent(this, nullptr, nullptr);
-   event->InitEvent(aEventName, false, false);
-+		UBSI_MEM_READ((void*)event);
- 
-   return DispatchTrustedEvent(event);
- }
 --- firefox-54.0.1/dom/events/EventTarget.cpp	2017-06-15 16:52:17.000000000 -0400
 +++ firefox-54.0.1_backup/dom/events/EventTarget.cpp	2018-02-28 18:53:49.310051935 -0500
 @@ -4,6 +4,7 @@
@@ -210,24 +158,6 @@ diff -Naur firefox-54.0.1/browser/components/nsBrowserGlue.js firefox-54.0.1_UBS
    aRv = DispatchEvent(&aEvent, &result);
    return !aEvent.DefaultPrevented(aCallerType);
  }
---- firefox-54.0.1/dom/events/EventListenerManager.cpp	2017-06-15 16:52:17.000000000 -0400
-+++ firefox-54.0.1_backup/dom/events/EventListenerManager.cpp	2018-02-28 16:39:07.870051935 -0500
-@@ -7,6 +7,7 @@
- // Microsoft's API Name hackery sucks
- #undef CreateEvent
- 
-+#include "../../../UBSI.h"
- #include "mozilla/AddonPathService.h"
- #include "mozilla/BasicEvents.h"
- #include "mozilla/CycleCollectedJSContext.h"
-@@ -1388,6 +1389,7 @@
-                         bool aUseCapture,
-                         bool aWantsUntrusted)
- {
-+		UBSI_MEM_WRITE((void*)this);
-   EventListenerFlags flags;
-   flags.mCapture = aUseCapture;
-   flags.mAllowUntrustedEvents = aWantsUntrusted;
 --- firefox-54.0.1/dom/events/TextComposition.cpp	2017-06-15 16:52:17.000000000 -0400
 +++ firefox-54.0.1_backup/dom/events/TextComposition.cpp	2018-02-28 20:41:43.866051935 -0500
 @@ -4,6 +4,7 @@
@@ -293,42 +223,6 @@ diff -Naur firefox-54.0.1/browser/components/nsBrowserGlue.js firefox-54.0.1_UBS
    nsCOMPtr<nsIDOMEvent> event;
    nsCOMPtr<EventTarget> target;
    nsresult rv = GetEventAndTarget(aDoc, aTarget, aEventName, aCanBubble,
---- firefox-54.0.1/dom/base/nsGlobalWindow.cpp	2017-06-15 16:52:09.000000000 -0400
-+++ firefox-54.0.1_backup/dom/base/nsGlobalWindow.cpp	2018-02-28 16:36:57.874051935 -0500
-@@ -5,6 +5,7 @@
-  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
- #include "nsGlobalWindow.h"
-+#include "../../../UBSI.h"
- 
- #include <algorithm>
- 
-@@ -10114,6 +10115,7 @@
-     aWantsUntrusted = true;
-   }
- 
-+		UBSI_MEM_WRITE((void*)this);
-   EventListenerManager* manager = GetOrCreateListenerManager();
-   NS_ENSURE_STATE(manager);
-   manager->AddEventListener(aType, aListener, aUseCapture, aWantsUntrusted);
---- firefox-54.0.1/dom/base/nsWindowRoot.cpp	2017-06-15 16:52:09.000000000 -0400
-+++ firefox-54.0.1_backup/dom/base/nsWindowRoot.cpp	2018-02-28 16:38:02.090051935 -0500
-@@ -4,6 +4,7 @@
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
-+#include "../../../UBSI.h"
- #include "mozilla/BasicEvents.h"
- #include "mozilla/EventDispatcher.h"
- #include "mozilla/EventListenerManager.h"
-@@ -116,6 +117,7 @@
-                "aWantsUntrusted to false or make the aWantsUntrusted "
-                "explicit by making optional_argc non-zero.");
- 
-+		UBSI_MEM_WRITE((void*)this);
-   EventListenerManager* elm = GetOrCreateListenerManager();
-   NS_ENSURE_STATE(elm);
-   elm->AddEventListener(aType, aListener, aUseCapture, aWantsUntrusted);
 --- firefox-54.0.1/dom/base/nsINode.cpp	2017-06-15 16:52:09.000000000 -0400
 +++ firefox-54.0.1_backup/dom/base/nsINode.cpp	2018-02-28 16:13:53.142051935 -0500
 @@ -8,6 +8,7 @@
@@ -339,24 +233,6 @@ diff -Naur firefox-54.0.1/browser/components/nsBrowserGlue.js firefox-54.0.1_UBS
  #include "nsINode.h"
  
  #include "AccessCheck.h"
-@@ -1188,7 +1189,8 @@
-        !nsContentUtils::IsChromeDoc(OwnerDoc()))) {
-     aWantsUntrusted = true;
-   }
--
-+		
-+		UBSI_MEM_WRITE((void*)this);
-   EventListenerManager* listener_manager = GetOrCreateListenerManager();
-   NS_ENSURE_STATE(listener_manager);
-   listener_manager->AddEventListener(aType, aListener, aUseCapture,
-@@ -1210,6 +1212,7 @@
-     wantsUntrusted = aWantsUntrusted.Value();
-   }
- 
-+		UBSI_MEM_WRITE((void*)this);
-   EventListenerManager* listener_manager = GetOrCreateListenerManager();
-   if (!listener_manager) {
-     aRv.Throw(NS_ERROR_UNEXPECTED);
 @@ -1318,7 +1321,8 @@
      *aRetVal = true;
      return NS_OK;
