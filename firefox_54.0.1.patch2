@@ -175,35 +175,6 @@ diff -Naur firefox-54.0.1/browser/components/nsBrowserGlue.js firefox-54.0.1_UBS
 +		UBSI_MEM_READ((void*)aDispatchEvent);
    nsPluginInstanceOwner::GeneratePluginEvent(aOriginalEvent,
                                               aDispatchEvent);
- 
---- firefox-54.0.1/dom/base/nsTextFragment.cpp	2017-06-15 16:52:09.000000000 -0400
-+++ firefox-54.0.1_backup/dom/base/nsTextFragment.cpp	2018-02-24 17:14:23.038051935 -0500
-@@ -10,6 +10,7 @@
-  * a char*; otherwise the text is stored as a char16_t*
-  */
- 
-+#include "../../../UBSI.h"
- #include "nsTextFragment.h"
- #include "nsCRT.h"
- #include "nsReadableUtils.h"
-@@ -114,6 +115,8 @@
-       }
- 
-       if (m2b) {
-+								UBSI_MEM_READ((void*)aOther.m2b);
-+								UBSI_MEM_WRITE((void*)m2b);
-         memcpy(m2b, aOther.m2b, m2bSize.value());
-       } else {
-         // allocate a buffer for a single REPLACEMENT CHARACTER
-@@ -312,6 +315,8 @@
-   }
- 
-   if (aCount != 0) {
-+				UBSI_MEM_READ((void*)m2b + aOffset);
-+				UBSI_MEM_WRITE((void*)aDest);
-     if (mState.mIs2b) {
-       memcpy(aDest, m2b + aOffset, sizeof(char16_t) * aCount);
-     } else {
 --- firefox-54.0.1/dom/base/nsContentUtils.cpp	2017-06-15 16:52:09.000000000 -0400
 +++ firefox-54.0.1_backup/dom/base/nsContentUtils.cpp	2018-02-28 20:39:19.450051935 -0500
 @@ -6,6 +6,7 @@
