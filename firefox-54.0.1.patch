@@ -13,52 +13,46 @@ diff -Naur firefox-54.0.1/browser/components/nsBrowserGlue.js firefox-54.0.1_UBS
  
        const skipDefaultBrowserCheck =
          Services.prefs.getBoolPref("browser.shell.skipDefaultBrowserCheckOnFirstRun") &&
-diff -Naur firefox-54.0.1/ipc/glue/MessagePump.cpp firefox-54.0.1_UBSI/ipc/glue/MessagePump.cpp
---- firefox-54.0.1/ipc/glue/MessagePump.cpp	2017-06-15 16:51:57.000000000 -0400
-+++ firefox-54.0.1_UBSI/ipc/glue/MessagePump.cpp	2018-01-31 13:18:27.603238067 -0500
+
+--- firefox-54.0.1/xpcom/io/nsStreamUtils.cpp	2017-06-15 16:52:36.000000000 -0400
++++ firefox-54.0.1_backup/xpcom/io/nsStreamUtils.cpp	2018-02-23 20:05:17.594051935 -0500
 @@ -4,6 +4,7 @@
   * License, v. 2.0. If a copy of the MPL was not distributed with this
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
  
 +#include "../../UBSI.h"
- #include "MessagePump.h"
+ #include "mozilla/Mutex.h"
+ #include "mozilla/Attributes.h"
+ #include "nsStreamUtils.h"
+@@ -820,6 +821,8 @@
+                        uint32_t* aCountWritten)
+ {
+   char* toBuf = static_cast<char*>(aClosure);
++  UBSI_MEM_READ(aBuffer);
++  UBSI_MEM_WRITE(&toBuf[aOffset]);
+   memcpy(&toBuf[aOffset], aBuffer, aCount);
+   *aCountWritten = aCount;
+   return NS_OK;
+--- firefox-54.0.1/layout/base/nsPresContext.cpp	2017-06-15 16:52:30.000000000 -0400
++++ firefox-54.0.1_backup/layout/base/nsPresContext.cpp	2018-03-01 00:29:33.410051935 -0500
+@@ -5,6 +5,7 @@
  
- #include "nsIRunnable.h"
-@@ -91,6 +92,7 @@
-   base::ScopedNSAutoreleasePool autoReleasePool;
+ /* a presentation of a document, part 1 */
  
-   for (;;) {
-+    UBSI_LOOP_ENTRY(2);
-     autoReleasePool.Recycle();
- 
-     bool did_work = NS_ProcessNextEvent(thisThread, false) ? true : false;
-@@ -123,6 +125,7 @@
-     // This will either sleep or process an event.
-     NS_ProcessNextEvent(thisThread, true);
++#include "../../../UBSI.h"
+ #include "mozilla/ArrayUtils.h"
+ #include "mozilla/DebugOnly.h"
+ #include "mozilla/EventDispatcher.h"
+@@ -310,6 +311,7 @@
+     mNeverAnimate = false;
    }
-+  UBSI_LOOP_EXIT(2);
+   NS_ASSERTION(mDocument, "Null document");
++		UBSI_MEM_WRITE((void*)this);
  
-     mDelayedWorkTimer->Cancel();
- 
-@@ -333,6 +336,7 @@
- 
-   base::ScopedNSAutoreleasePool autoReleasePool;
-   for (;;) {
-+    UBSI_LOOP_ENTRY(3);
-     autoReleasePool.Recycle();
- 
-     bool didWork = NS_ProcessNextEvent(thread, false) ? true : false;
-@@ -367,6 +371,7 @@
-     // This will either sleep or process an event.
-     NS_ProcessNextEvent(thread, true);
-   }
-+  UBSI_LOOP_EXIT(3);
- 
-   mDelayedWorkTimer->Cancel();
- 
-diff -Naur firefox-54.0.1/js/src/jsutil.h firefox-54.0.1_UBSI/js/src/jsutil.h
+   // if text perf logging enabled, init stats struct
+   if (MOZ_LOG_TEST(gfxPlatform::GetLog(eGfxLog_textperf), LogLevel::Warning)) {
 --- firefox-54.0.1/js/src/jsutil.h	2017-06-15 16:52:06.000000000 -0400
-+++ firefox-54.0.1_UBSI/js/src/jsutil.h	2018-01-31 13:18:27.603238067 -0500
++++ firefox-54.0.1_backup/js/src/jsutil.h	2018-02-23 20:05:17.590051935 -0500
 @@ -11,6 +11,7 @@
  #ifndef jsutil_h
  #define jsutil_h
@@ -76,28 +70,171 @@ diff -Naur firefox-54.0.1/js/src/jsutil.h firefox-54.0.1_UBSI/js/src/jsutil.h
      char* dst = (char*) dst_;
      const char* src = (const char*) src_;
      MOZ_ASSERT_IF(dst >= src, (size_t) (dst - src) >= len);
-diff -Naur firefox-54.0.1/netwerk/base/nsSocketTransport2.cpp firefox-54.0.1_UBSI/netwerk/base/nsSocketTransport2.cpp
---- firefox-54.0.1/netwerk/base/nsSocketTransport2.cpp	2017-06-15 16:52:27.000000000 -0400
-+++ firefox-54.0.1_UBSI/netwerk/base/nsSocketTransport2.cpp	2018-01-31 13:18:27.603238067 -0500
+--- firefox-54.0.1/js/src/jsscript.cpp	2017-06-15 16:52:06.000000000 -0400
++++ firefox-54.0.1_backup/js/src/jsscript.cpp	2018-02-24 16:48:16.726051935 -0500
+@@ -8,6 +8,7 @@
+  * JS script operations.
+  */
+ 
++#include "../../../UBSI.h"
+ #include "jsscriptinlines.h"
+ 
+ #include "mozilla/DebugOnly.h"
+@@ -3286,6 +3287,8 @@
+         return false;
+     }
+ 
++    UBSI_MEM_READ((void*)src->data);
++    UBSI_MEM_WRITE((void*)dst->data);
+     /* NB: Keep this in sync with XDRScript. */
+ 
+     /* Some embeddings are not careful to use ExposeObjectToActiveJS as needed. */
+--- firefox-54.0.1/dom/events/Event.cpp	2017-06-15 16:52:17.000000000 -0400
++++ firefox-54.0.1_backup/dom/events/Event.cpp	2018-03-01 00:33:50.578051935 -0500
 @@ -4,6 +4,7 @@
   * License, v. 2.0. If a copy of the MPL was not distributed with this
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
  
-+#include "../../UBSI.h"
- #include "nsSocketTransport2.h"
++#include "../../../UBSI.h"
+ #include "AccessCheck.h"
+ #include "base/basictypes.h"
+ #include "ipc/IPCMessageUtils.h"
+@@ -46,11 +47,14 @@
+              nsPresContext* aPresContext,
+              WidgetEvent* aEvent)
+ {
++		UBSI_MEM_WRITE((void*)this);
++		UBSI_MEM_WRITE((void*)aEvent);
+   ConstructorInit(aOwner, aPresContext, aEvent);
+ }
  
- #include "mozilla/Attributes.h"
-@@ -397,6 +398,7 @@
-     // cannot hold lock while calling NSPR.  (worried about the fact that PSM
-     // synchronously proxies notifications over to the UI thread, which could
-     // mistakenly try to re-enter this code.)
-+    UBSI_MEM_WRITE(buf);
-     int32_t n = PR_Read(fd, buf, count);
+ Event::Event(nsPIDOMWindowInner* aParent)
+ {
++		UBSI_MEM_WRITE((void*)this);
+   ConstructorInit(nsGlobalWindow::Cast(aParent), nullptr, nullptr);
+ }
  
-     SOCKET_LOG(("  PR_Read returned [n=%d]\n", n));
-diff -Naur firefox-54.0.1/netwerk/base/nsSocketTransportService2.cpp firefox-54.0.1_UBSI/netwerk/base/nsSocketTransportService2.cpp
+@@ -366,6 +370,7 @@
+     return workers::IsCurrentThreadRunningChromeWorker();
+   }
+   bool trusted = false;
++		UBSI_MEM_WRITE((void*)this);
+   nsCOMPtr<nsPIDOMWindowInner> w = do_QueryInterface(aGlobal);
+   if (w) {
+     nsCOMPtr<nsIDocument> d = w->GetExtantDoc();
+@@ -398,6 +403,8 @@
+                    const EventInit& aParam)
+ {
+   RefPtr<Event> e = new Event(aEventTarget, nullptr, nullptr);
++		UBSI_MEM_WRITE((void*)e);
++		UBSI_MEM_WRITE((void*)aEventTarget);
+   bool trusted = e->Init(aEventTarget);
+   e->InitEvent(aType, aParam.mBubbles, aParam.mCancelable);
+   e->SetTrusted(trusted);
+@@ -597,6 +604,8 @@
+ {
+   // Make sure this event isn't already being dispatched.
+   NS_ENSURE_TRUE_VOID(!mEvent->mFlags.mIsBeingDispatched);
++		UBSI_MEM_WRITE((void*)this);
++		UBSI_MEM_WRITE((void*)mEvent);
+ 
+   if (IsTrusted()) {
+     // Ensure the caller is permitted to dispatch trusted DOM events.
+--- firefox-54.0.1/dom/events/EventTarget.cpp	2017-06-15 16:52:17.000000000 -0400
++++ firefox-54.0.1_backup/dom/events/EventTarget.cpp	2018-02-28 18:53:49.310051935 -0500
+@@ -4,6 +4,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#include "../../../UBSI.h"
+ #include "mozilla/EventListenerManager.h"
+ #include "mozilla/dom/EventTarget.h"
+ #include "mozilla/dom/EventTargetBinding.h"
+@@ -70,6 +71,7 @@
+                            ErrorResult& aRv)
+ {
+   bool result = false;
++		UBSI_MEM_READ((void*)&aEvent);
+   aRv = DispatchEvent(&aEvent, &result);
+   return !aEvent.DefaultPrevented(aCallerType);
+ }
+--- firefox-54.0.1/dom/events/TextComposition.cpp	2017-06-15 16:52:17.000000000 -0400
++++ firefox-54.0.1_backup/dom/events/TextComposition.cpp	2018-02-28 20:41:43.866051935 -0500
+@@ -4,6 +4,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#include "../../../UBSI.h"
+ #include "ContentEventHandler.h"
+ #include "IMEContentObserver.h"
+ #include "IMEStateManager.h"
+@@ -148,6 +149,7 @@
+                                EventDispatchingCallback* aCallBack,
+                                const WidgetCompositionEvent *aOriginalEvent)
+ {
++		UBSI_MEM_READ((void*)aDispatchEvent);
+   nsPluginInstanceOwner::GeneratePluginEvent(aOriginalEvent,
+                                              aDispatchEvent);
+--- firefox-54.0.1/dom/base/nsContentUtils.cpp	2017-06-15 16:52:09.000000000 -0400
++++ firefox-54.0.1_backup/dom/base/nsContentUtils.cpp	2018-02-28 20:39:19.450051935 -0500
+@@ -6,6 +6,7 @@
+ 
+ /* A namespace class for static layout utilities. */
+ 
++#include "../../../UBSI.h"
+ #include "nsContentUtils.h"
+ 
+ #include <algorithm>
+@@ -4078,6 +4079,8 @@
+                               bool aTrusted, bool *aDefaultAction,
+                               bool aOnlyChromeDispatch)
+ {
++		UBSI_MEM_READ((void*)aTarget);
++		UBSI_MEM_READ((void*)aDoc);
+   nsCOMPtr<nsIDOMEvent> event;
+   nsCOMPtr<EventTarget> target;
+   nsresult rv = GetEventAndTarget(aDoc, aTarget, aEventName, aCanBubble,
+--- firefox-54.0.1/dom/base/nsINode.cpp	2017-06-15 16:52:09.000000000 -0400
++++ firefox-54.0.1_backup/dom/base/nsINode.cpp	2018-02-28 16:13:53.142051935 -0500
+@@ -8,6 +8,7 @@
+  * Base class for all DOM nodes.
+  */
+ 
++#include "../../../UBSI.h"
+ #include "nsINode.h"
+ 
+ #include "AccessCheck.h"
+@@ -1318,7 +1321,8 @@
+     *aRetVal = true;
+     return NS_OK;
+   }
+-
++		
++		UBSI_MEM_READ((void*)aEvent);
+   // Obtain a presentation shell
+   nsIPresShell *shell = document->GetShell();
+   RefPtr<nsPresContext> context;
+--- firefox-54.0.1/dom/base/Element.cpp	2017-06-15 16:52:08.000000000 -0400
++++ firefox-54.0.1_backup/dom/base/Element.cpp	2018-02-28 18:41:11.146051935 -0500
+@@ -10,6 +10,7 @@
+  * utility methods for subclasses, and so forth.
+  */
+ 
++#include "../../../UBSI.h"
+ #include "mozilla/dom/ElementInlines.h"
+ 
+ #include "AnimationCommon.h"
+@@ -2101,6 +2102,8 @@
+     return NS_OK;
+   }
+ 
++		UBSI_MEM_READ((void*)aEvent);
++		UBSI_MEM_READ((void*)aTarget);
+   if (aFullDispatch) {
+     return shell->HandleEventWithTarget(aEvent, nullptr, aTarget, aStatus);
+   }
 --- firefox-54.0.1/netwerk/base/nsSocketTransportService2.cpp	2017-06-15 16:52:27.000000000 -0400
-+++ firefox-54.0.1_UBSI/netwerk/base/nsSocketTransportService2.cpp	2018-01-31 13:18:27.603238067 -0500
++++ firefox-54.0.1_backup/netwerk/base/nsSocketTransportService2.cpp	2018-02-23 20:05:17.594051935 -0500
 @@ -3,6 +3,7 @@
   * License, v. 2.0. If a copy of the MPL was not distributed with this
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -122,9 +259,28 @@ diff -Naur firefox-54.0.1/netwerk/base/nsSocketTransportService2.cpp firefox-54.
  
          bool goingOffline = false;
          // now that our event queue is empty, check to see if we should exit
+--- firefox-54.0.1/netwerk/base/nsSocketTransport2.cpp	2017-06-15 16:52:27.000000000 -0400
++++ firefox-54.0.1_backup/netwerk/base/nsSocketTransport2.cpp	2018-02-23 20:05:17.594051935 -0500
+@@ -4,6 +4,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#include "../../UBSI.h"
+ #include "nsSocketTransport2.h"
+ 
+ #include "mozilla/Attributes.h"
+@@ -397,6 +398,7 @@
+     // cannot hold lock while calling NSPR.  (worried about the fact that PSM
+     // synchronously proxies notifications over to the UI thread, which could
+     // mistakenly try to re-enter this code.)
++    UBSI_MEM_WRITE(buf);
+     int32_t n = PR_Read(fd, buf, count);
+ 
+     SOCKET_LOG(("  PR_Read returned [n=%d]\n", n));
+
 diff -Naur firefox-54.0.1/python/mozboot/mozboot/bootstrap.py firefox-54.0.1_UBSI/python/mozboot/mozboot/bootstrap.py
 --- firefox-54.0.1/python/mozboot/mozboot/bootstrap.py	2017-06-15 16:52:31.000000000 -0400
-+++ firefox-54.0.1_UBSI/python/mozboot/mozboot/bootstrap.py	2018-01-31 13:18:27.603238067 -0500
++++ firefox-54.0.1_U/python/mozboot/mozboot/bootstrap.py	2018-01-31 13:18:27.603238067 -0500
 @@ -150,7 +150,7 @@
  class Bootstrapper(object):
      """Main class that performs system bootstrap."""
@@ -134,9 +290,9 @@ diff -Naur firefox-54.0.1/python/mozboot/mozboot/bootstrap.py firefox-54.0.1_UBS
                   hg_configure=False):
          self.instance = None
          self.finished = finished
-diff -Naur firefox-54.0.1/UBSI.h firefox-54.0.1_UBSI/UBSI.h
+diff -Naur firefox-54.0.1/UBSI.h firefox-54.0.1_U/UBSI.h
 --- firefox-54.0.1/UBSI.h	1969-12-31 19:00:00.000000000 -0500
-+++ firefox-54.0.1_UBSI/UBSI.h	2018-01-31 13:18:27.603238067 -0500
++++ firefox-54.0.1_U/UBSI.h	2018-01-31 13:18:27.603238067 -0500
 @@ -0,0 +1,29 @@
 +#ifndef UBSI_DEFINE
 +#define UBSI_DEFINE
@@ -167,23 +323,4 @@ diff -Naur firefox-54.0.1/UBSI.h firefox-54.0.1_UBSI/UBSI.h
 +
 +#endif
 +
-diff -Naur firefox-54.0.1/xpcom/io/nsStreamUtils.cpp firefox-54.0.1_UBSI/xpcom/io/nsStreamUtils.cpp
---- firefox-54.0.1/xpcom/io/nsStreamUtils.cpp	2017-06-15 16:52:36.000000000 -0400
-+++ firefox-54.0.1_UBSI/xpcom/io/nsStreamUtils.cpp	2018-01-31 13:18:27.603238067 -0500
-@@ -4,6 +4,7 @@
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
-+#include "../../UBSI.h"
- #include "mozilla/Mutex.h"
- #include "mozilla/Attributes.h"
- #include "nsStreamUtils.h"
-@@ -820,6 +821,8 @@
-                        uint32_t* aCountWritten)
- {
-   char* toBuf = static_cast<char*>(aClosure);
-+  UBSI_MEM_READ(aBuffer);
-+  UBSI_MEM_WRITE(&toBuf[aOffset]);
-   memcpy(&toBuf[aOffset], aBuffer, aCount);
-   *aCountWritten = aCount;
-   return NS_OK;
+
