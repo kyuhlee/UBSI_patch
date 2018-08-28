@@ -213,6 +213,7 @@ mkdir -p /home/$user/.mozbuild
 cd firefox-54.0.1 && patch -N -s -p1 < ../firefox-54.0.1.patch
 cp ../uthash-master/src/uthash.h ./
 cd ..
+sudo rm -rf /usr/local/firefox-54.0.1/
 sudo mv -f ./firefox-54.0.1 /usr/local/
 sudo chown -R root:root /usr/local/firefox-54.0.1/
 cd /usr/local/firefox-54.0.1/
