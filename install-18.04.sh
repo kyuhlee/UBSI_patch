@@ -20,19 +20,16 @@ fi
 
 echo "Start install!"
 
-sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-sudo add-apt-repository -y ppa:mercurial-ppa/releases
-sudo apt-get -y update 
-sudo apt-get -y install libcurl4-openssl-dev g++-4.9
-sudo apt-get -y install libdbus-glib-1-dev libxt-dev mesa-common-dev libgconf2-dev libgtk2.0-dev yasm libasound2-dev libpulse-dev libncurses-dev libgc-dev libssl-dev libgnutls28-dev glib2.0-dev libgc-dev libslang2-dev libapr1-dev libaprutil1-dev libpcre3 libpcre3-dev libevent-dev intltool
-sudo apt-get -y install libcurl4-openssl-dev
-sudo apt-get -y install zip unzip
-sudo apt-get -y install g++-4.9 rustc cargo mercurial
+sudo apt -y update 
+sudo apt -y install libcurl4-openssl-dev
+sudo apt -y install libdbus-glib-1-dev libxt-dev mesa-common-dev libgconf2-dev libgtk2.0-dev yasm libasound2-dev libpulse-dev libncurses-dev libgc-dev libssl-dev libgnutls28-dev glib2.0-dev libgc-dev libslang2-dev libapr1-dev libaprutil1-dev libpcre3 libpcre3-dev libevent-dev intltool
+sudo apt -y install libcurl4-openssl-dev
+sudo apt -y install zip unzip
+sudo apt -y install rustc cargo mercurial
+sudo apt -y install gcc-5 g++-5 python
 
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 50
-sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 50
-
-
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 50
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 50
 
 
 # httpd-2.4.20:
@@ -210,8 +207,10 @@ wget -N https://github.com/troydhanson/uthash/archive/master.zip
 unzip -o master.zip
 tar xf firefox-54.0.1.source.tar.xz
 mkdir -p /home/$user/.mozbuild
-cd firefox-54.0.1 && patch -N -s -p1 < $cwd/firefox-54.0.1.patch
-cp ../uthash-master/src/uthash.h ./
+cd firefox-54.0.1
+patch -N -s -p1 < $cwd/firefox-54.0.1-ucontext.patch
+patch -N -s -p1 < $cwd/firefox-54.0.1.patch
+cp $cwd/uthash-master/src/uthash.h ./
 cd ..
 sudo rm -rf /usr/local/firefox-54.0.1/
 sudo mv -f ./firefox-54.0.1 /usr/local/
