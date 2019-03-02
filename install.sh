@@ -84,7 +84,7 @@ sudo cp -f src/wget /usr/local/bin
 #w3m-0.5.3
 cd $cwd
 if [ ! -f ./w3m-0.5.3.tar.gz ]; then
-		https://downloads.sourceforge.net/project/w3m/w3m/w3m-0.5.3/w3m-0.5.3.tar.gz
+		wget https://downloads.sourceforge.net/project/w3m/w3m/w3m-0.5.3/w3m-0.5.3.tar.gz
 fi
 tar xzvf w3m-0.5.3.tar.gz
 cd w3m-0.5.3 && patch -N -s -p2 < ../w3m-0.5.3.patch
