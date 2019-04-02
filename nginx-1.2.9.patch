@@ -1,6 +1,6 @@
 diff -Naru nginx-1.2.9/src/os/unix/ngx_process_cycle.c nginx-1.2.9_UBSI/src/os/unix/ngx_process_cycle.c
---- nginx-1.2.9/src/os/unix/ngx_process_cycle.c	2019-04-02 08:21:03.497085227 -0700
-+++ nginx-1.2.9_UBSI/src/os/unix/ngx_process_cycle.c	2019-04-02 08:24:38.350795833 -0700
+--- nginx-1.2.9/src/os/unix/ngx_process_cycle.c	2019-04-02 08:33:37.785811950 -0700
++++ nginx-1.2.9_UBSI/src/os/unix/ngx_process_cycle.c	2019-04-02 08:33:10.298489697 -0700
 @@ -9,6 +9,7 @@
  #include <ngx_core.h>
  #include <ngx_event.h>
@@ -13,7 +13,7 @@ diff -Naru nginx-1.2.9/src/os/unix/ngx_process_cycle.c nginx-1.2.9_UBSI/src/os/u
      }
  
      for ( ;; ) {
-+						  UBSI_LOOP_ENTRY(1);
++        UBSI_LOOP_ENTRY(1);
          ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
  
          ngx_process_events_and_timers(cycle);
@@ -21,7 +21,7 @@ diff -Naru nginx-1.2.9/src/os/unix/ngx_process_cycle.c nginx-1.2.9_UBSI/src/os/u
              ngx_reopen_files(cycle, (ngx_uid_t) -1);
          }
      }
-+				UBSI_LOOP_EXIT(1);
++    UBSI_LOOP_EXIT(1);
  }
  
  
